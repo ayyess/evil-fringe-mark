@@ -329,10 +329,9 @@ and the start and end of the current paragraphs."
            (when (eq (current-buffer) (overlay-buffer overlay))
              (evil-fringe-mark-delete key))))
 
-(defadvice evil-set-marker (around compile)
-  "Advice function for `evil-fringe-mark'."
-  (let ((char      (ad-get-arg 0))
-        (marker    ad-do-it)
+(defun evil-fringe-mark-advise-evil-set-marker (evil-set-marker char &rest args)
+  "Advice function by `evil-fringe-mark' for `evil-set-marker'"
+  (let ((marker    (apply evil-set-marker char args))
         (char-list (evil-fringe-mark-char-list char))
         (old-mark  nil))
     (when (or evil-fringe-mark-mode global-evil-fringe-mark-mode)
@@ -342,21 +341,21 @@ and the start and end of the current paragraphs."
             (evil-fringe-mark-put-special char marker))
         (evil-fringe-mark-put char char-list marker)))))
 
-(defadvice evil-delete-marks (after compile)
-  "Advice function for `evil-fringe-mark'."
+(defun evil-fringe-mark-advise-evil-delete-marks (&rest args)
+  "Advice function by `evil-fringe-mark' for `evil-delete-marks'"
   (evil-fringe-mark-clear-buffer)
   (evil-fringe-mark-refresh-buffer))
 
-(defadvice evil-visual-refresh (after compile)
-  "Advice function for `evil-fringe-mark'."
+(defun evil-fringe-mark-advise-evil-visual-refresh (&rest args)
+  "Advice function by `evil-fringe-mark' for `evil-visual-refresh'"
   (evil-fringe-mark-refresh-visual))
 
-(defadvice evil-paste-before (after compile)
-  "Advice function for `evil-fringe-mark'."
+(defun evil-fringe-mark-advise-evil-paste-before (&rest args)
+  "Advice function by `evil-fringe-mark'. for `evil-paste-before'"
   (evil-fringe-mark-refresh-paste))
 
-(defadvice evil-paste-after (after compile)
-  "Advice function for `evil-fringe-mark'."
+(defun evil-fringe-mark-advise-evil-paste-after (&rest args)
+  "Advice function by `evil-fringe-mark' for `evil-paste-after'"
   (evil-fringe-mark-refresh-paste))
 
 ;;;###autoload
@@ -366,27 +365,27 @@ and the start and end of the current paragraphs."
   (if evil-fringe-mark-mode
       (progn
         (evil-fringe-mark-refresh-buffer)
-        (ad-activate 'evil-set-marker)
-        (ad-activate 'evil-delete-marks)
+        (advice-add 'evil-set-marker :after #'evil-fringe-mark-advise-evil-set-marker)
+        (advice-add 'evil-delete-marks :after #'evil-fringe-mark-advise-evil-delete-marks)
         ; Only enable special mark tracking when necessary
         (unless (and (member ?< evil-fringe-mark-ignore-chars)
                      (member ?> evil-fringe-mark-ignore-chars))
-          (ad-activate 'evil-visual-refresh))
+          (advice-add 'evil-visual-refresh :after #'evil-fringe-mark-advise-evil-visual-refresh))
         (unless (and (member ?\[ evil-fringe-mark-ignore-chars)
                      (member ?\] evil-fringe-mark-ignore-chars))
-          (ad-activate 'evil-paste-before)
-          (ad-activate 'evil-paste-after))
+          (advice-add 'evil-paste-before :after #'evil-fringe-mark-advise-evil-paste-before)
+          (advice-add 'evil-paste-after :after #'evil-fringe-mark-advise-evil-paste-after))
         (unless (and (member ?. evil-fringe-mark-ignore-chars)
                      (member ?{ evil-fringe-mark-ignore-chars)
                      (member ?} evil-fringe-mark-ignore-chars))
           (add-hook 'post-command-hook 'evil-fringe-mark-refresh-special)))
     (progn
       (evil-fringe-mark-clear-buffer)
-      (ad-deactivate 'evil-set-marker)
-      (ad-deactivate 'evil-delete-marks)
-      (ad-deactivate 'evil-visual-refresh)
-      (ad-deactivate 'evil-paste-before)
-      (ad-deactivate 'evil-paste-after)
+      (advice-remove 'evil-set-marker #'evil-fringe-mark-advise-evil-set-marker)
+      (advice-remove 'evil-delete-marks #'evil-fringe-mark-advise-evil-delete-marks)
+      (advice-remove 'evil-visual-refresh #'evil-fringe-mark-advise-evil-visual-refresh)
+      (advice-remove 'evil-paste-before #'evil-fringe-mark-advise-evil-paste-before)
+      (advice-remove 'evil-paste-after #'evil-fringe-mark-advise-evil-paste-after)
       (remove-hook 'post-command-hook 'evil-fringe-mark-refresh-special))))
 
 ;;;###autoload
@@ -402,15 +401,15 @@ and the start and end of the current paragraphs."
           (cl-loop for buf in (buffer-list) do
                    (set-buffer buf)
                    (evil-fringe-mark-refresh-buffer)))
-        (ad-activate 'evil-set-marker)
-        (ad-activate 'evil-delete-marks)
+        (advice-add 'evil-set-marker :around #'evil-fringe-mark-advise-evil-set-marker)
+        (advice-add 'evil-delete-marks :after #'evil-fringe-mark-advise-evil-delete-marks)
         (unless (and (member ?< evil-fringe-mark-ignore-chars)
                      (member ?> evil-fringe-mark-ignore-chars))
-          (ad-activate 'evil-visual-refresh))
+          (advice-add 'evil-visual-refresh :after #'evil-fringe-mark-advise-evil-visual-refresh))
         (unless (and (member ?\[ evil-fringe-mark-ignore-chars)
                      (member ?\] evil-fringe-mark-ignore-chars))
-          (ad-activate 'evil-paste-before)
-          (ad-activate 'evil-paste-after))
+          (advice-add 'evil-paste-before :after #'evil-fringe-mark-advise-evil-paste-before)
+          (advice-add 'evil-paste-after :after #'evil-fringe-mark-advise-evil-paste-after))
         (unless (and (member ?. evil-fringe-mark-ignore-chars)
                      (member ?{ evil-fringe-mark-ignore-chars)
                      (member ?} evil-fringe-mark-ignore-chars))
@@ -421,12 +420,12 @@ and the start and end of the current paragraphs."
         (cl-loop for buf in (buffer-list) do
                  (set-buffer buf)
                  (evil-fringe-mark-clear-buffer)))
-      ; Remove all global marks
-      (ad-deactivate 'evil-set-marker)
-      (ad-deactivate 'evil-delete-marks)
-      (ad-deactivate 'evil-visual-refresh)
-      (ad-deactivate 'evil-paste-before)
-      (ad-deactivate 'evil-paste-after)
+                 ; Remove all global marks
+      (advice-remove 'evil-set-marker :after #'evil-fringe-mark-advise-evil-set-marker)
+      (advice-remove 'evil-delete-marks :after #'evil-fringe-mark-advise-evil-delete-marks)
+      (advice-remove 'evil-visual-refresh :after #'evil-fringe-mark-advise-evil-visual-refresh)
+      (advice-remove 'evil-paste-before :after #'evil-fringe-mark-advise-evil-paste-before)
+      (advice-remove 'evil-paste-after :after #'evil-fringe-mark-advise-evil-paste-after)
       (remove-hook 'post-command-hook 'evil-fringe-mark-refresh-special))))
 
 (provide 'evil-fringe-mark)
