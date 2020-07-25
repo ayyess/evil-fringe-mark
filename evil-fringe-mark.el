@@ -365,7 +365,7 @@ and the start and end of the current paragraphs."
   (if evil-fringe-mark-mode
       (progn
         (evil-fringe-mark-refresh-buffer)
-        (advice-add 'evil-set-marker :after #'evil-fringe-mark-advise-evil-set-marker)
+        (advice-add 'evil-set-marker :around: #'evil-fringe-mark-advise-evil-set-marker)
         (advice-add 'evil-delete-marks :after #'evil-fringe-mark-advise-evil-delete-marks)
         ; Only enable special mark tracking when necessary
         (unless (and (member ?< evil-fringe-mark-ignore-chars)
