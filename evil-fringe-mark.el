@@ -90,6 +90,10 @@ it was placed first."
   :type '(choice (const :tag "Left margin" left-margin)
                  (const :tag "Right margin" right-margin)))
 
+(defcustom evil-fringe-force-margin nil
+  "Always place marks in margin even when in graphical Emacs sessions."
+  :type 'boolean)
+
 (defface evil-fringe-mark-local-face
   '((t (:inherit (font-lock-keyword-face))))
   "Face with which to display buffer-local fringe marks.")
@@ -185,7 +189,7 @@ MARKER."
       (when old-mark (fringe-helper-remove old-mark)))
     (set char-list (plist-put (symbol-value char-list) char
                               ; Place indicators in the fringe if running Emacs graphically
-                              (if (display-graphic-p)
+                              (if (and (display-graphic-p) (not evil-fringe-force-margin))
                                   (fringe-helper-insert
                                    (cdr (assoc char evil-fringe-mark-bitmaps)) marker
                                    evil-fringe-mark-side
